@@ -15,10 +15,16 @@
 
     "jobs": {
 
-        "test_1" : {
+        "example_inline_sql" : {
 
             "sql"       :"SELECT COUNT(*) from \"CELONIS_CONFIGURATION_STORE_USER\".\"SalesOrders\"",
             "interval"  : 5000
+        },
+
+        "example_file.sql" : {
+
+            "file"      :"test.sql",
+            "interval"  : 7000
         }
     },
 
