@@ -4,12 +4,14 @@
   "description": "",
   "main": "run.js",
   "dependencies": {
+    "@sap/hana-client": "^2.4.139",
     "node-fetch": "^2.6.0",
     "uuid": "^8.1.0"
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node run.js"
   },
   "author": "Fedor Pavlov",
   "license": "ISC"
