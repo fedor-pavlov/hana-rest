@@ -1,0 +1,16 @@
+{
+  "name": "@hanatools/hana-rest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "run.js",
+  "dependencies": {
+    "node-fetch": "^2.6.0",
+    "uuid": "^8.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Fedor Pavlov",
+  "license": "ISC"
+}
