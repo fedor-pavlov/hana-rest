@@ -1,4 +1,4 @@
-# PREREQUISITES
+# PREREQUISITE
 * NodeJS 10.21.0
 * MS Visual Studio build tools 2017
 * Python 2.7
