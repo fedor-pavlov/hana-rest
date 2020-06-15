@@ -126,11 +126,12 @@ function hdb_shutdown(on_shutdown) {
 //
 class QueueItem {
 
-    constructor(name, query) {
+    constructor(name, query, postQuery) {
 
         this.id         = UUID();
         this.name       = name;
         this.query      = query;
+		this.postQuery  = postQuery;
         this.attempts   = 0;
         this.first_try  = new Date();
         this.last_try   = undefined;
@@ -191,11 +192,11 @@ class QueueItem {
         this.last_try = new Date();
         let qi = this; // this is nessesary to setup lexical context of an arrow callback function used by the hdb client
 
-        execute(this.query)
+        return execute(this.query)
         .then(rows => {
 
-            trace('HANA-QUERY-PULL: SUCCESS', { name: qi.name, id: qi.id, duration: qi.duration + ' ms', start: qi.last_try, query: qi.query, response: rows });
-            qi.send(rows)
+            trace('HANA-QUERY-PULL: SUCCESS', { name: qi.name, id: qi.id, duration: qi.duration + ' ms', start: qi.last_try, query: qi.query, response: rows, response_length: rows.length, skip_send_phase: rows.length < 1 });
+            return rows.length && qi.send(rows)
 
         }, err => {
 
@@ -203,6 +204,7 @@ class QueueItem {
             qi.failure = new Date();
             traceError("HANA-QUERY-PULL: FAILED TO PULL DATA FROM HANA", { err: err, queue_item: qi });
             delete MESSAGE_QUEUE[qi.id];
+            return Promise.reject({reason: "pull failure", err: err, item: qi});
         })
     }
 
@@ -213,17 +215,28 @@ class QueueItem {
 
         try {
 
-            fetch(SETTINGS.api.path, {
+            let headers = { 'Content-Type': 'application/json' };
+
+            if (SETTINGS.api.auth && SETTINGS.api.auth.basic) {
+
+                let {user, password} = SETTINGS.api.auth.basic
+                headers["Authorization"] = `Basic ${( Buffer.from(`${user}:${password}`)).toString('base64')}`
+            }
+
+            return fetch(SETTINGS.api.path, {
 
                 method  : SETTINGS.api.method,
                 body    : JSON.stringify(data),
-                headers : { 'Content-Type': 'application/json' },
+                headers : headers
             })
             .then(result => {
 
                 qi.success = new Date();
-                delete MESSAGE_QUEUE[qi.id];
+
                 trace('HANA-QUERY-DISPATCH: SUCCESS', { name: qi.name, duration: qi.duration + ' ms', start: qi.last_try, retries: qi.attempts, response: result });
+
+                delete MESSAGE_QUEUE[qi.id];
+                return qi.postprocess().finally(() => ({reason: "success", item: qi}));
 
             }, err => {
 
@@ -232,13 +245,17 @@ class QueueItem {
                 if (qi.attempts++ < RETRY_LIMIT) {
 
                     traceError('HANA-QUERY-DISPATCH: ERROR', err, qi);
-                    setTimeout(() => qi.send(data), RETRY_INTERVAL)                    
+                    return new Promise((resolve, reject) => { 
+
+                        setTimeout(() => qi.send(data).then(resolve, reject), RETRY_INTERVAL)
+                    })
                 }
                 else {
 
                     traceError("HANA-QUERY-DISPATCH: GIVEUP", { retry: qi.attempts, limit: RETRY_LIMIT, queue_item: qi });
                     qi.failure = new Date();
                     delete MESSAGE_QUEUE[qi.id];
+                    return Promise.reject({reason: "send failure (giveup)", err: err, item: qi})
                 }
             })
         }
@@ -249,7 +266,13 @@ class QueueItem {
             this.failure = new Date();
             delete MESSAGE_QUEUE[this.id];
             traceError('HANA-QUERY-DISPATCH: FATAL ERROR', err, this);
+            return Promise.reject({reason: "exception", err: err, item: qi});
         }
+    }
+
+    postprocess() {
+
+        return this.postQuery && execute(this.postQuery);
     }
 }
 
@@ -260,10 +283,10 @@ class QueueItem {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MESSAGE DISPATCHING
 //
-function dispatch (name, query) {
+function dispatch (name, query, postSQL) {
 
     if (SHUTDOWN_ATTEMPT) { return };
-    (new QueueItem(name, query)).pull();
+    (new QueueItem(name, query, postSQL)).pull();
 }
 
 

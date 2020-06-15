@@ -18,6 +18,7 @@
         "example_inline_sql" : {
 
             "sql"       :"SELECT COUNT(*) from \"CELONIS_CONFIGURATION_STORE_USER\".\"SalesOrders\"",
+            "postSql"   :"",
             "interval"  : 5000
         },
 
@@ -32,6 +33,12 @@
 
         "method"    : "post",
         "path"      : "https://httpbin.org/post",
+        "auth"      : {
+            "basic" : {
+                "user"      : "",
+                "password"  : ""
+            }
+        },
         "retry"     : {
             "limit"     : 3,
             "interval"  : 1000

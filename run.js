@@ -11,12 +11,13 @@ Object.keys(SETTINGS.jobs).map(job_name => {
 
     let job = SETTINGS.jobs[job_name];
     let sql = job.sql || job.file && FS.readFileSync(PATH.join('./', job.file), { encoding: 'utf8' })
+	let postSQL = job.postSQL
 
-    setInterval((name, query) => {
+    setInterval((name, query, postSQL) => {
 
-        HANA.dispatch(name, query)
+        HANA.dispatch(name, query, postSQL)
 
-    }, job.interval, job_name, sql)
+    }, job.interval, job_name, sql, postSQL)
 })
 
 
