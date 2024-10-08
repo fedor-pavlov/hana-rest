@@ -4,7 +4,7 @@
   "description": "",
   "main": "run.js",
   "dependencies": {
-    "@sap/hana-client": "^2.4.139",
+    "@sap/hana-client": "^2.21.31",
     "node-fetch": "^2.6.0",
     "uuid": "^8.1.0"
   },
